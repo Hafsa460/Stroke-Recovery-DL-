@@ -1,0 +1,8 @@
+# Ignore PyTorch model weights
+*.pt
+
+# Ignore Jupyter notebooks
+*.ipynb
+
+# Ignore Python virtual environment
+venv/
