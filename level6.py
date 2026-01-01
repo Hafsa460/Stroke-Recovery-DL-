@@ -5,6 +5,7 @@ from PIL import Image, ImageTk
 import mediapipe as mp
 import time
 from level3 import show_result
+from smoothing_utils import DistanceSmoother
 try:
     from dl_utils import DLModelManager
     from movement_metrics import MovementMetrics
@@ -21,6 +22,7 @@ class Level6_HandOpenClose:
         self.last_state_change = time.time()
         self.completed = False
         self.font = cv2.FONT_HERSHEY_SIMPLEX
+        self.dist_smoother = DistanceSmoother(alpha=0.6)  # Smoothing
 
     def detect_hand_state(self, landmarks, w, h):
         index_tip = landmarks.landmark[8]
@@ -29,6 +31,8 @@ class Level6_HandOpenClose:
             np.array([index_tip.x * w, index_tip.y * h]) -
             np.array([thumb_tip.x * w, thumb_tip.y * h])
         )
+        # Apply smoothing to distance
+        dist = self.dist_smoother.smooth(dist)
         return "open" if dist > 60 else "closed"
 
     def update(self, img):

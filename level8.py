@@ -4,6 +4,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import random
 import time
+from smoothing_utils import ExponentialSmoother
 # Optional DL integration
 try:
     from dl_utils import DLModelManager

@@ -4,6 +4,7 @@ import cv2
 import mediapipe as mp
 import numpy as np
 from level3 import show_result
+from smoothing_utils import ExponentialSmoother
 class GripStrengthGame:
     def __init__(self):
         self.font = cv2.FONT_HERSHEY_SIMPLEX

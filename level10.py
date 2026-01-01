@@ -3,7 +3,8 @@ import mediapipe as mp
 import tkinter as tk
 from PIL import Image, ImageTk
 import time
-# Optional DL integration
+import random
+from smoothing_utils import ExponentialSmoother
 try:
     from dl_utils import DLModelManager
     from movement_metrics import MovementMetrics
@@ -20,14 +21,19 @@ def run_level10(root, level_unlocked, back_to_menu_callback, new_level_callback,
 
     canvas = tk.Canvas(root, width=640, height=480)
     canvas.pack()
-    label = tk.Label(root, text="Follow the sequence of zones in order", font=("Arial", 14))
+    label = tk.Label(root, text="Follow the sequence of zones in order (Mixed Sequence)", font=("Arial", 14))
     label.pack()
 
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(min_detection_confidence=0.7, min_tracking_confidence=0.5)
     cap = cv2.VideoCapture(0)
 
-    sequence = [(120,120),(320,120),(520,120),(320,360)]
+    # Create zone positions
+    zone_positions = [(120, 120), (320, 120), (520, 120), (320, 360)]  # TL, TC, TR, BC
+    # Shuffle the sequence randomly
+    sequence = list(range(4))  # [0, 1, 2, 3]
+    random.shuffle(sequence)  # e.g. [2, 0, 3, 1]
+    
     index = 0
     hits_required = 4
     hits = 0
@@ -56,13 +62,29 @@ def run_level10(root, level_unlocked, back_to_menu_callback, new_level_callback,
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         res = hands.process(rgb)
 
-        # draw sequence
-        for i, pos in enumerate(sequence):
-            color = (0,255,0) if i < index else (255,0,0)
-            cv2.circle(frame, pos, radius, color, 2)
-            cv2.putText(frame, str(i+1), (pos[0]-10,pos[1]+10), cv2.FONT_HERSHEY_SIMPLEX, 1, color,2)
+        # draw all zones with colors indicating order
+        colors_map = [(255, 100, 100), (100, 255, 100), (100, 100, 255), (255, 255, 0)]
+        for i, pos in enumerate(zone_positions):
+            # Highlight current target zone
+            if sequence[index] == i:
+                color = (0, 255, 0)  # Green = next target
+                thickness = 3
+                cv2.circle(frame, pos, radius + 5, color, thickness)
+            else:
+                color = colors_map[i]
+                thickness = 2
+                cv2.circle(frame, pos, radius, color, thickness)
+            
+            # Draw zone number (based on sequence order)
+            zone_order = sequence.index(i) + 1
+            cv2.putText(frame, str(zone_order), (pos[0] - 10, pos[1] + 10), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
 
-        cv2.putText(frame, f'Progress: {hits}/{hits_required}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255,255,255), 2)
+        cv2.putText(frame, f'Progress: {hits}/{hits_required}', (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
+        cv2.putText(frame, f'Current Target: Zone {sequence[index] + 1}', (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        
+        # Display sequence order at bottom
+        seq_display = ' → '.join([str(sequence.index(i) + 1) for i in range(4)])
+        cv2.putText(frame, f'Sequence Order: {seq_display}', (10, 450), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
 
         if res.multi_hand_landmarks:
             lm = res.multi_hand_landmarks[0]
@@ -73,11 +95,14 @@ def run_level10(root, level_unlocked, back_to_menu_callback, new_level_callback,
                     globals()['metrics'].add_position(ix, iy)
                 except Exception:
                     pass
-            tx, ty = sequence[index]
-            dist = ((ix - tx)**2 + (iy - ty)**2)**0.5
+            
+            # Check if hand is in current target zone
+            tx, ty = zone_positions[sequence[index]]
+            dist = ((ix - tx) ** 2 + (iy - ty) ** 2) ** 0.5
             if dist < radius:
                 hits += 1
-                index = min(len(sequence)-1, index+1)
+                index = min(len(sequence) - 1, index + 1)
+                cv2.putText(frame, '✓ ZONE HIT!', (250, 150), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
         img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
         imgtk = ImageTk.PhotoImage(image=img)

@@ -3,6 +3,7 @@ import numpy as np
 import tkinter as tk
 from PIL import Image, ImageTk
 import mediapipe as mp
+from smoothing_utils import ExponentialSmoother
 try:
     from dl_utils import DLModelManager
     from movement_metrics import MovementMetrics

@@ -3,6 +3,7 @@ import random
 import tkinter as tk
 from PIL import Image, ImageTk
 import mediapipe as mp
+from smoothing_utils import ExponentialSmoother
 
 from level3 import show_result
 import time
@@ -31,7 +32,10 @@ class Level4_SequenceTapping:
         self.generate_sequence(5)
         self.level_complete = False
         self.last_tap_time = 0
-        self.flash_index = -1  
+        self.flash_index = -1
+        self.blink_timer = 0  # For blinking effect
+        self.show_repeat_button = False  # Show "Repeat" after sequence
+        self.repeat_button_rect = (200, 400, 440, 450)  # (x1, y1, x2, y2)
 
     def generate_sequence(self, length):
         self.sequence = [random.choice(self.colors) for _ in range(length)]
@@ -46,7 +50,9 @@ class Level4_SequenceTapping:
             bgr = self.get_bgr(color)
 
             if self.show_sequence and self.current_show_index < len(self.sequence) and self.sequence[self.current_show_index] == color:
-                thickness = -1 
+                # Blink effect: toggle on/off every 15 frames
+                if (self.blink_timer // 15) % 2 == 0:
+                    thickness = -1
             elif self.flash_index == i:
                 thickness = -1 
 
@@ -55,9 +61,16 @@ class Level4_SequenceTapping:
 
         cv2.putText(img, 'Repeat the sequence by tapping squares', (10, 40), self.font, 0.7, (255, 255, 255), 2)
         cv2.putText(img, f'Score: {self.score}/{len(self.sequence)}', (10, 70), self.font, 0.7, (255, 255, 255), 2)
+        
+        # Draw "Repeat" button if sequence finished
+        if self.show_repeat_button:
+            x1, y1, x2, y2 = self.repeat_button_rect
+            cv2.rectangle(img, (x1, y1), (x2, y2), (0, 200, 255), -1)
+            cv2.putText(img, 'Repeat Sequence', (x1 + 20, y1 + 30), self.font, 0.8, (255, 255, 255), 2)
 
     def update(self, img):
-        self.flash_index = -1 
+        self.flash_index = -1
+        self.blink_timer += 1
 
         if self.show_sequence:
             self.timer += 1
@@ -65,6 +78,7 @@ class Level4_SequenceTapping:
                 self.current_show_index += 1
                 if self.current_show_index >= len(self.sequence):
                     self.show_sequence = False
+                    self.show_repeat_button = True  # Show repeat button
                     self.current_show_index = -1
         else:
             results = self.hands_detector.process(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
@@ -84,6 +98,18 @@ class Level4_SequenceTapping:
                 cv2.circle(img, index_pos, 10, (255, 255, 255), -1)
 
                 dist = ((index_pos[0] - thumb_pos[0]) ** 2 + (index_pos[1] - thumb_pos[1]) ** 2) ** 0.5
+
+                # Check if clicked "Repeat" button
+                if self.show_repeat_button and dist < 40:
+                    x1, y1, x2, y2 = self.repeat_button_rect
+                    if x1 < index_pos[0] < x2 and y1 < index_pos[1] < y2:
+                        # Repeat sequence
+                        self.show_sequence = True
+                        self.show_repeat_button = False
+                        self.current_show_index = 0
+                        self.timer = 0
+                        self.user_taps = []
+                        self.score = 0
 
                 if dist < 40 and (time.time() - self.last_tap_time > 0.5):  
                     for i, (x, y) in enumerate(self.squares_pos):

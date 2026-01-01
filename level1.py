@@ -5,6 +5,7 @@ import mediapipe as mp
 import time
 import numpy as np
 from level3 import show_result
+from smoothing_utils import ExponentialSmoother
 # Optional DL integration
 try:
     from dl_utils import DLModelManager
@@ -25,6 +26,7 @@ class BalanceAndHold:
         self.count = 0
         self.target_count = 1
         self.font = cv2.FONT_HERSHEY_SIMPLEX
+        self.smoother = ExponentialSmoother(alpha=0.7)  # Smoothing
 
     def update(self, img, hands_detector):
         h, w, _ = img.shape
@@ -39,6 +41,11 @@ class BalanceAndHold:
             index_tip = lm.landmark[8]
             x = int(index_tip.x * w)
             y = int(index_tip.y * h)
+            
+            # Apply smoothing
+            x, y = self.smoother.smooth(x, y)
+            x, y = int(x), int(y)
+            
             cv2.circle(img, (x, y), 8, (255, 255, 255), -1)
             cv2.putText(img, f'Pinch and hold inside the circle', (10, 80), self.font, 0.8, (0, 255, 0), 2)
           

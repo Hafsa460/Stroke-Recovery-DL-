@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verify Reports</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h3>Verify Test Reports (Detection only)</h3>
+
+      <form id="uploadForm">
+        <input id="fileInput" type="file" accept="image/*" />
+        <div class="form-actions">
+          <button type="button" id="previewBtn" class="primary-btn">Preview & Confirm</button>
+          <button type="submit" id="uploadBtn" class="primary-btn" disabled>Upload & Get Result</button>
+        </div>
+      </form>
+
+      <div id="previewArea" class="image-preview" style="display:none">
+        <h4>Preview</h4>
+        <img id="previewImg" src="#" alt="Preview" />
+        <p id="fileName"></p>
+      </div>
+
+      <div id="resultArea" class="result-box" style="display:none"></div>
+
+      <p id="errorMsg" class="error-message"></p>
+    </div>
+
+    <script src="/static/verify.js"></script>
+  </body>
+</html>

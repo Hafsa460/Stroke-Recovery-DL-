@@ -5,6 +5,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from level3 import show_result
 import os
+from smoothing_utils import ExponentialSmoother
 
 # Optional DL integration
 try:
