@@ -6,3 +6,5 @@
 
 # Ignore Python virtual environment
 venv/
+# Ignore PyTorch model files
+*.pth
