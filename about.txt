@@ -1,8 +1,0 @@
-ABOUT THE GAME:
-
-This game is designed to help stroke patients recover hand mobility and coordination through an interactive and engaging interface using computer vision.
-
-Team:
-- Developer: Your Name
-- Advisor: Dr. XYZ
-- Tools: Python, OpenCV, MediaPipe, Tkinter
